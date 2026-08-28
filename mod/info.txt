@@ -1,0 +1,11 @@
+{
+ "Name": "Papa's Pantheon",
+ "ID": "papas pantheon",
+ "Author": "it.Carl",
+ "Description": "Presets and save slots for the Temple's pantheon. Rearranging spirits is the most expensive routine action in the game - worship swaps come back after 1, 4 and 16 hours - so every preset tells you what it costs before you touch it, and the cost shown is the true minimum rather than the number of sockets that differ. Six presets for the ways people actually play, unlimited named slots for your own arrangements, and a confirmation before anything expensive.",
+ "ModVersion": 1.0,
+ "GameVersion": 2.053,
+ "Date": "28/08/2026",
+ "Dependencies": [],
+ "AllowSteamAchievs": 1
+}
