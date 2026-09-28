@@ -1,22 +1,40 @@
-# Papa's Pantheon
+<a id="readme-top"></a>
 
-Presets and save slots for the Cookie Clicker Temple, priced at the true minimum before you spend a swap.
+<div align="center">
+  <img src="docs/logo.png" alt="Logo" width="128" height="128">
 
-![Release](https://img.shields.io/github/v/release/itCarl/cookie-clicker-papas-pantheon) ![CI](https://github.com/itCarl/cookie-clicker-papas-pantheon/actions/workflows/release.yml/badge.svg) ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+  <h3 align="center">Papa's Pantheon</h3>
+
+  <p align="center">
+    Presets and save slots for the Cookie Clicker Temple, priced at the true minimum before you spend a swap.
+    <br />
+    <a href="https://github.com/itCarl/cookie-clicker-papas-pantheon/releases"><strong>Download the latest release</strong></a>
+    <br />
+    <br />
+    <a href="https://github.com/itCarl/cookie-clicker-papas-pantheon/issues/new?labels=bug">Report Bug</a>
+    &middot;
+    <a href="https://github.com/itCarl/cookie-clicker-papas-pantheon/issues/new?labels=enhancement">Request Feature</a>
+  </p>
+
+  <a href="https://github.com/itCarl/cookie-clicker-papas-pantheon/releases"><img src="https://img.shields.io/github/v/release/itCarl/cookie-clicker-papas-pantheon" alt="Release"></a>
+  <a href="https://github.com/itCarl/cookie-clicker-papas-pantheon/actions/workflows/release.yml"><img src="https://github.com/itCarl/cookie-clicker-papas-pantheon/actions/workflows/release.yml/badge.svg" alt="CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+</div>
 
 <details>
-<summary>Table of Contents</summary>
-
-- [About](#about)
-- [Features](#features)
-- [Installation](#installation)
-- [How it works](#how-it-works)
-- [Development](#development)
-- [License](#license)
-
+  <summary>Table of Contents</summary>
+  <ol>
+    <li><a href="#about-the-project">About The Project</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#installation">Installation</a></li>
+    <li><a href="#how-it-works">How It Works</a></li>
+    <li><a href="#development">Development</a></li>
+    <li><a href="#license">License</a></li>
+    <li><a href="#acknowledgments">Acknowledgments</a></li>
+  </ol>
 </details>
 
-## About
+## About The Project
 
 Papa's Pantheon adds presets and named save slots to the Temple / pantheon
 minigame. Rearranging spirits is the most expensive routine action in the game:
@@ -28,6 +46,8 @@ touch it. The cost is found by a breadth-first search over arrangements that
 models the game's own rule: `M.slotGod` makes two spirits exchange places when
 one is dropped on an occupied socket. Two spirits trading sockets is one drag,
 not two - counting differing sockets would say five hours when it costs one.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Features
 
@@ -51,6 +71,8 @@ not two - counting differing sockets would say five hours when it costs one.
 - Swap counter with time until the next swap returns, read from the game's own
   curve.
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ## Installation
 
 ### Manual
@@ -61,7 +83,9 @@ not two - counting differing sockets would say five hours when it costs one.
 3. Restart the game and enable the mod under **Options -> Mods**. The panel
    appears under the Temple.
 
-## How it works
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## How It Works
 
 - **Cost search.** There are only three sockets, so the mod searches the space
   of arrangements for the shortest sequence of drags, applying the game's swap
@@ -76,6 +100,8 @@ not two - counting differing sockets would say five hours when it costs one.
   than transcribed. `Game.mods['papas pantheon']` exposes a small read-only API.
 - **ASCII-only source**, because the game's `index.html` declares no
   `<meta charset>` and injects mod scripts with `createElement('script')`.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Development
 
@@ -106,6 +132,16 @@ lands on the target, and it spends exactly what it said it would.
 | `moddev/test.js` | behavioural tests |
 | `moddev/make_thumbnail.py` | redraws the Workshop thumbnail |
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ## License
 
 Distributed under the MIT License. See [`LICENSE`](LICENSE) for details.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Acknowledgments
+
+- [Orteil's Cookie Clicker](https://orteil.dashnet.org/cookieclicker/) - the game this mod reads everything from
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>

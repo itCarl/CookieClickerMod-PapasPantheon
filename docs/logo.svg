@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#171106"/>
+  <!-- crest ring -->
+  <circle cx="256" cy="256" r="196" fill="none" stroke="#3a2f14" stroke-width="6"/>
+  <circle cx="256" cy="256" r="180" fill="#1c1509" stroke="#c8a24a" stroke-width="5"/>
+  <!-- gem ornaments on the ring: the three worship slots -->
+  <circle cx="256" cy="76"  r="12" fill="#8fd4ee"/>
+  <circle cx="100" cy="346" r="12" fill="#ee8f8f"/>
+  <circle cx="412" cy="346" r="12" fill="#9fe08f"/>
+  <!-- temple -->
+  <path d="M136 226 L256 148 L376 226 Z" fill="none" stroke="#e2c274" stroke-width="13" stroke-linejoin="round"/>
+  <rect x="146" y="236" width="220" height="16" rx="8" fill="#c8a24a"/>
+  <rect x="168" y="268" width="30" height="94" rx="8" fill="#e2c274"/>
+  <rect x="241" y="268" width="30" height="94" rx="8" fill="#e2c274"/>
+  <rect x="314" y="268" width="30" height="94" rx="8" fill="#e2c274"/>
+  <rect x="146" y="374" width="220" height="16" rx="8" fill="#c8a24a"/>
+  <!-- spirit gem in the pediment -->
+  <circle cx="256" cy="204" r="16" fill="#8fd4ee"/>
+</svg>
