@@ -21,7 +21,7 @@
 'use strict';
 
 var MOD_ID   = 'papas pantheon';
-var VERSION  = '1.0';
+var VERSION  = '1.1';
 var PANEL_ID = 'papasPantheonPanel';
 
 var SLOT_NAMES = ['Diamond', 'Ruby', 'Jade'];
@@ -141,12 +141,21 @@ var showHelp = false;
  * Helpers
  * ------------------------------------------------------------------ */
 
+var godKeysSet = false;
+
 function pantheon() {
 	if (typeof Game === 'undefined' || !Game.Objects) return null;
 	var temple = Game.Objects['Temple'];
 	if (!temple || !temple.minigameLoaded || !temple.minigame) return null;
 	var m = temple.minigame;
-	return (m.gods && m.godsById && m.slot && m.slotGod) ? m : null;
+	if (!(m.gods && m.godsById && m.slot && m.slotGod)) return null;
+	if (!godKeysSet) {
+		// The game gives each spirit an id but no key of its own; writing the
+		// keys once spares a lookup scan on every read of the arrangement.
+		for (var k in m.gods) m.gods[k].key = k;
+		godKeysSet = true;
+	}
+	return m;
 }
 
 /** The three slots as spirit keys, with null for an empty socket. */
@@ -159,7 +168,7 @@ function currentArrangement(m) {
 	return out;
 }
 
-/** The game gives each spirit an id but no key of its own. */
+/** Fallback lookup for a spirit whose key has not been written yet. */
 function keyOf(m, id) {
 	for (var k in m.gods) if (m.gods[k].id === id) return k;
 	return null;
@@ -168,6 +177,12 @@ function keyOf(m, id) {
 function godName(m, key) {
 	if (!key) return 'empty';
 	return (GODS[key] && GODS[key].short) || (m.gods[key] ? m.gods[key].name : key);
+}
+
+/** For anything player-named that ends up in innerHTML. */
+function esc(s) {
+	return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function fmtTime(ms) {
@@ -204,13 +219,18 @@ function applyMove(state, key, slot) {
 	var next = state.slice();
 	var from = -1;
 	for (var i = 0; i < 3; i++) if (next[i] === key) from = i;
-	var prev = next[slot];
 
+	if (slot === -1) {
+		// Back to the roster. The socket is simply freed; nothing else moves.
+		if (from >= 0) next[from] = null;
+		return next;
+	}
+
+	var prev = next[slot];
 	if (from >= 0) next[from] = prev;      // they exchange
 	next[slot] = key;
-	if (from < 0 && prev !== null) {
-		// The displaced spirit goes back to the roster; nothing else moves.
-	}
+	// A spirit dragged in from the roster pushes any previous occupant back
+	// out to it; that costs nothing extra and moves nothing else.
 	return next;
 }
 
@@ -232,23 +252,37 @@ function planMoves(from, to) {
 		if (k && pool.indexOf(k) < 0) pool.push(k);
 	});
 
-	var seen = {};
-	seen[startKey] = true;
-	var queue = [{state: from, moves: []}];
+	// Dragging a spirit back out to the roster is free: dropGod's roster
+	// branch calls slotGod(god,-1) without useSwap. Only dropping one onto a
+	// socket costs a swap. That makes this a 0-1 search - free moves go to
+	// the front of the queue, paid ones to the back, and the first time the
+	// goal is taken out its cost is the true minimum.
+	var best = {};
+	best[startKey] = 0;
+	var queue = [{state: from, moves: [], cost: 0}];
+
+	function step(node, key, slot, price) {
+		var next = applyMove(node.state, key, slot);
+		var k = next.join('|');
+		var cost = node.cost + price;
+		if (best[k] !== undefined && best[k] <= cost) return;
+		best[k] = cost;
+		var entry = {state: next, moves: node.moves.concat([[key, slot]]), cost: cost};
+		if (price === 0) queue.unshift(entry);
+		else queue.push(entry);
+	}
 
 	while (queue.length) {
 		var node = queue.shift();
-		if (node.moves.length >= 4) continue;      // three sockets can never need more
+		var nodeKey = node.state.join('|');
+		if (nodeKey === goalKey) return {cost: node.cost, moves: node.moves};
+		if (node.cost > best[nodeKey]) continue;   // a cheaper way here was found
+		if (node.cost >= 4) continue;              // three sockets can never need more
 		for (var p = 0; p < pool.length; p++) {
+			if (node.state.indexOf(pool[p]) >= 0) step(node, pool[p], -1, 0);
 			for (var s = 0; s < 3; s++) {
 				if (node.state[s] === pool[p]) continue;
-				var next = applyMove(node.state, pool[p], s);
-				var k = next.join('|');
-				if (seen[k]) continue;
-				var moves = node.moves.concat([[pool[p], s]]);
-				if (k === goalKey) return {cost: moves.length, moves: moves};
-				seen[k] = true;
-				queue.push({state: next, moves: moves});
+				step(node, pool[p], s, 1);
 			}
 		}
 	}
@@ -258,6 +292,24 @@ function planMoves(from, to) {
 function costOf(m, target) {
 	var plan = planMoves(currentArrangement(m), target);
 	return plan ? plan.cost : null;
+}
+
+/**
+ * The panel repaints every logic frame, but the searches it prices only
+ * change when the arrangement or the saved list does - so their results are
+ * kept until either moves.
+ */
+var costCache = {sig: null, presets: [], saved: []};
+
+function cachedCosts(m) {
+	var sig = m.slot.join(',') + '#' +
+		saved.map(function (e) { return e.gods.join('.'); }).join(';');
+	if (costCache.sig !== sig) {
+		costCache.sig = sig;
+		costCache.presets = PRESETS.map(function (p) { return costOf(m, p.gods); });
+		costCache.saved = saved.map(function (e) { return costOf(m, e.gods); });
+	}
+	return costCache;
 }
 
 /* ------------------------------------------------------------------ *
@@ -285,7 +337,7 @@ function placeDOM(m, god, slot) {
 function applyArrangement(m, target) {
 	var plan = planMoves(currentArrangement(m), target);
 	if (!plan) { statusText = 'that arrangement cannot be reached'; return false; }
-	if (plan.cost === 0) { statusText = 'already set up that way'; return true; }
+	if (!plan.moves.length) { statusText = 'already set up that way'; return true; }
 	if (plan.cost > m.swaps) {
 		statusText = 'needs ' + plan.cost + ' swaps, you have ' + m.swaps;
 		return false;
@@ -295,6 +347,15 @@ function applyArrangement(m, target) {
 		var key = plan.moves[i][0], slot = plan.moves[i][1];
 		var god = m.gods[key];
 		if (!god) continue;
+
+		if (slot === -1) {
+			// Back to the roster - the game charges nothing for this
+			// (dropGod's roster branch never calls useSwap).
+			m.slotGod(god, -1);
+			placeDOM(m, god, -1);
+			continue;
+		}
+
 		var displaced = (m.slot[slot] !== -1) ? m.godsById[m.slot[slot]] : null;
 		var fromSlot = god.slot;
 
@@ -306,9 +367,10 @@ function applyArrangement(m, target) {
 		if (displaced && displaced !== god) placeDOM(m, displaced, fromSlot);
 	}
 
-	if (typeof Game !== 'undefined') Game.recalculateGains = 1;
-	statusText = 'applied for ' + plan.cost + ' swap' + (plan.cost === 1 ? '' : 's') +
-		'; ' + m.swaps + ' left';
+	statusText = plan.cost === 0
+		? 'applied without spending a swap'
+		: 'applied for ' + plan.cost + ' swap' + (plan.cost === 1 ? '' : 's') +
+			'; ' + m.swaps + ' left';
 	return true;
 }
 
@@ -320,7 +382,7 @@ function applyArrangement(m, target) {
 function request(m, target, label) {
 	var plan = planMoves(currentArrangement(m), target);
 	if (!plan) { statusText = 'that arrangement cannot be reached'; return; }
-	if (plan.cost === 0) { statusText = 'already set up that way'; return; }
+	if (!plan.moves.length) { statusText = 'already set up that way'; return; }
 	if (plan.cost > m.swaps) {
 		statusText = label + ' needs ' + plan.cost + ' swaps and you have ' + m.swaps +
 			' - next one in ' + fmtTime(nextSwapIn(m));
@@ -358,10 +420,11 @@ function tip(key) {
 function buildCSS() {
 return [
 	'#' + PANEL_ID + '{position:relative;z-index:120;margin:0;padding:8px 24px 10px 24px;',
-	'background:rgba(0,0,0,0.84);color:#e8e8e8;font-size:14px;text-align:left;',
+	'background:rgba(0,0,0,0.82);color:#e8e8e8;font-size:14px;text-align:left;',
 	'border-top:1px solid #c8a24a;box-shadow:0 0 8px rgba(0,0,0,0.6) inset;}',
-	'#' + PANEL_ID + ' .ppRow{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin:4px 0;}',
+	'#' + PANEL_ID + ' .ppRow{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:4px 0;}',
 	'#' + PANEL_ID + ' .ppTitle{font-weight:bold;color:#e2c274;letter-spacing:1px;}',
+	'#' + PANEL_ID + ' .ppVer{font-weight:normal;font-size:10px;letter-spacing:0;opacity:0.55;margin-left:5px;}',
 	'#' + PANEL_ID + ' .ppBtn{cursor:pointer;border:1px solid rgba(255,255,255,0.35);border-radius:3px;',
 	'padding:1px 9px;font-weight:bold;font-size:13px;background:rgba(255,255,255,0.08);color:#fff;}',
 	'#' + PANEL_ID + ' .ppBtn:hover{background:rgba(255,255,255,0.2);}',
@@ -369,8 +432,8 @@ return [
 	'#' + PANEL_ID + ' .ppBtn.ppDim{opacity:0.45;}',
 	'#' + PANEL_ID + ' .ppStat{font-size:13px;color:#bbb;}',
 	'#' + PANEL_ID + ' .ppStat b{color:#fff;}',
-	'#' + PANEL_ID + ' .ppSep{border:0;height:1px;background:#4a3f28;margin:6px 0;}',
-	'#' + PANEL_ID + ' .ppNote{font-size:12px;color:#9a9a9a;max-width:680px;line-height:1.45;}',
+	'#' + PANEL_ID + ' .ppSep{border:0;height:1px;background:#3f3f3f;margin:6px 0;}',
+	'#' + PANEL_ID + ' .ppNote{font-size:12px;color:#9a9a9a;max-width:640px;line-height:1.4;}',
 	'#' + PANEL_ID + ' .ppSlot{display:inline-block;min-width:104px;padding:2px 7px;border-radius:3px;',
 	'background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.14);font-size:13px;}',
 	'#' + PANEL_ID + ' .ppGem1{border-color:#8fd4ee;} #' + PANEL_ID + ' .ppGem2{border-color:#ee8f8f;}',
@@ -416,7 +479,7 @@ function buildPanel(host, m) {
 
 	panel.innerHTML =
 		'<div class="ppRow">' +
-			'<span class="ppTitle">PAPA&#39;S PANTHEON</span>' +
+			'<span class="ppTitle">PAPA&#39;S PANTHEON<span class="ppVer">v' + VERSION + '</span></span>' +
 			'<span class="ppStat" id="ppSwaps"' + tip('swaps') + '></span>' +
 			'<div class="ppBtn" data-act="help">How swaps work</div>' +
 		'</div>' +
@@ -544,10 +607,12 @@ function refreshPanel() {
 	var helpBox = document.getElementById('ppHelpBox');
 	if (helpBox) helpBox.style.display = showHelp ? 'block' : 'none';
 
+	var costs = cachedCosts(m);
+
 	// Presets: dimmed when they cost more than you have, and always priced.
 	var noteParts = [];
 	for (var p = 0; p < PRESETS.length; p++) {
-		var cost = costOf(m, PRESETS[p].gods);
+		var cost = costs.presets[p];
 		var btn = document.getElementById('ppPreset-' + PRESETS[p].key);
 		if (!btn) continue;
 		var cls = 'ppBtn' + (cost === 0 ? ' ppOn' : (cost > m.swaps ? ' ppDim' : ''));
@@ -563,13 +628,16 @@ function refreshPanel() {
 		sh = '<span class="ppNote">none yet</span>';
 	} else {
 		for (var s = 0; s < saved.length; s++) {
-			var c = costOf(m, saved[s].gods);
-			sh += '<div class="ppBtn' + (c === 0 ? ' ppOn' : (c > m.swaps ? ' ppDim' : '')) +
+			var c = costs.saved[s];
+			// A saved arrangement with empty sockets can cost nothing without
+			// being what is in the Temple - freeing a socket is a free drag.
+			var inPlace = saved[s].gods.join('|') === now.join('|');
+			sh += '<div class="ppBtn' + (inPlace ? ' ppOn' : (c > m.swaps ? ' ppDim' : '')) +
 				'" data-act="load" data-slot="' + s + '" title="' +
 				saved[s].gods.map(function (k, i2) { return SLOT_NAMES[i2] + ': ' + godName(m, k); })
 					.join(', ').replace(/"/g, '&quot;') +
-				'">' + saved[s].name + ' <span class="ppCost">' +
-				(c === 0 ? 'in place' : c + 'sw') + '</span></div>' +
+				'">' + esc(saved[s].name) + ' <span class="ppCost">' +
+				(inPlace ? 'in place' : (c === 0 ? 'free' : c + 'sw')) + '</span></div>' +
 				'<div class="ppBtn" data-act="forget" data-slot="' + s +
 				'" title="Forget this one">x</div>';
 		}

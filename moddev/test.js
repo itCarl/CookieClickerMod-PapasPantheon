@@ -69,29 +69,49 @@ console.log('\nthe cost of a rearrangement');
 
 	function brute(from, to) {
 		// Independent shortest-path search, written differently on purpose, so
-		// a shared mistake in the mod's own search would show up here.
-		var seen = {}, queue = [{s: from, n: 0}];
-		seen[from.join('|')] = true;
+		// a shared mistake in the mod's own search would show up here. Layered:
+		// take every free unslot first (the game charges nothing for dragging a
+		// spirit back to the roster), then spend one drag, and repeat.
+		var goal = to.join('|');
 		var pool = [];
 		from.concat(to).forEach(function (k) { if (k && pool.indexOf(k) < 0) pool.push(k); });
-		while (queue.length) {
-			var cur = queue.shift();
-			if (cur.s.join('|') === to.join('|')) return cur.n;
-			if (cur.n >= 4) continue;
-			for (var p = 0; p < pool.length; p++) {
-				for (var sl = 0; sl < 3; sl++) {
-					if (cur.s[sl] === pool[p]) continue;
-					var next = cur.s.slice();
-					var at = next.indexOf(pool[p]);
-					var prev = next[sl];
-					if (at >= 0) next[at] = prev;
-					next[sl] = pool[p];
-					var k = next.join('|');
-					if (seen[k]) continue;
-					seen[k] = true;
-					queue.push({s: next, n: cur.n + 1});
+
+		function unslotClosure(states) {
+			var out = {}, stack = [];
+			for (var k in states) { out[k] = states[k]; stack.push(states[k]); }
+			while (stack.length) {
+				var s = stack.pop();
+				for (var i = 0; i < 3; i++) {
+					if (s[i] === null) continue;
+					var n = s.slice(); n[i] = null;
+					var nk = n.join('|');
+					if (!out[nk]) { out[nk] = n; stack.push(n); }
 				}
 			}
+			return out;
+		}
+
+		var layer = {};
+		layer[from.join('|')] = from;
+		for (var paid = 0; paid <= 3; paid++) {
+			layer = unslotClosure(layer);
+			if (layer[goal]) return paid;
+			var nextLayer = {};
+			for (var key in layer) {
+				var s = layer[key];
+				for (var p = 0; p < pool.length; p++) {
+					for (var sl = 0; sl < 3; sl++) {
+						if (s[sl] === pool[p]) continue;
+						var next = s.slice();
+						var at = next.indexOf(pool[p]);
+						var prev = next[sl];
+						if (at >= 0) next[at] = prev;
+						next[sl] = pool[p];
+						nextLayer[next.join('|')] = next;
+					}
+				}
+			}
+			layer = nextLayer;
 		}
 		return null;
 	}
@@ -140,6 +160,38 @@ console.log('\nthe cost of a rearrangement');
 	eq('the predicted cost is always the true minimum', notMinimal, 0);
 	eq('applying the plan always lands on the target', wrongResult, 0);
 	eq('and spends exactly the predicted number of swaps', wrongCost, 0);
+})();
+
+/* ------------------------------------------------------------------ *
+ * 1b. Dragging a spirit back to the roster is free
+ * ------------------------------------------------------------------ */
+console.log('\nfree moves back to the roster');
+(function () {
+	var sb = fresh();
+	sb.setArrangement(['asceticism', 'industry', 'mother']);
+	sb.M.swaps = 3;
+
+	eq('emptying one socket is free',
+		sb.mod.getCost(['asceticism', 'industry', null]), 0);
+	ok('and applying it works', sb.mod.apply(['asceticism', 'industry', null]));
+	eq('the spirit went back to the roster',
+		sb.arrangement().join('|'), 'asceticism|industry|');
+	eq('and no swap was spent', sb.M.swaps, 3);
+	ok('and the status says it was free',
+		/without spending/.test(sb.mod.getStatus()), sb.mod.getStatus());
+
+	eq('emptying the whole pantheon is free',
+		sb.mod.getCost([null, null, null]), 0);
+
+	// The audit example: ['a','b',null] to ['b',null,null] was reported
+	// unreachable before free unslots were part of the search.
+	sb.setArrangement(['asceticism', 'industry', null]);
+	sb.M.swaps = 3;
+	eq('keeping one spirit and dropping the other costs one',
+		sb.mod.getCost(['industry', null, null]), 1);
+	ok('and it applies', sb.mod.apply(['industry', null, null]));
+	eq('landing exactly on the target', sb.arrangement().join('|'), 'industry||');
+	eq('for exactly one swap', sb.M.swaps, 2);
 })();
 
 /* ------------------------------------------------------------------ *
@@ -380,6 +432,35 @@ console.log('\nthe panel');
 	var text = sb.dom.get('ppWarnText').textContent;
 	ok('it asks in words, with the real wait',
 		/Click combo/.test(text) && /21 hours/.test(text), text);
+})();
+
+/* ------------------------------------------------------------------ *
+ * 8. Hostile saved names stay text
+ * ------------------------------------------------------------------ */
+console.log('\nhostile names');
+(function () {
+	var sb = fresh();
+	sb.setArrangement(['asceticism', 'industry', 'mother']);
+	sb.mod.load(JSON.stringify({v: 1, saved: [
+		{name: '<img src=x onerror=alert(1)>', gods: ['order', 'industry', 'mother']}
+	]}));
+	sb.frame();
+	var html = sb.dom.get('ppSaved').innerHTML;
+	ok('a hostile saved name is escaped, not markup',
+		html.indexOf('<img') < 0 && html.indexOf('&lt;img') >= 0, html);
+})();
+
+/* ------------------------------------------------------------------ *
+ * 9. The panel names its version
+ * ------------------------------------------------------------------ */
+console.log('\nversion');
+(function () {
+	var sb = fresh();
+	sb.setArrangement(['asceticism', 'industry', 'mother']);
+	sb.frame();
+	var panel = sb.dom.findCreated('papasPantheonPanel');
+	ok('the panel title shows the version',
+		!!panel && panel.innerHTML.indexOf('ppVer">v' + sb.mod.version + '<') >= 0);
 })();
 
 /* ------------------------------------------------------------------ */
