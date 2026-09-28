@@ -8,16 +8,16 @@
   <p align="center">
     Presets and save slots for the Cookie Clicker Temple, priced at the true minimum before you spend a swap.
     <br />
-    <a href="https://github.com/itCarl/PapasPantheon/releases"><strong>Download the latest release</strong></a>
+    <a href="https://github.com/itCarl/CookieClickerMod-PapasPantheon/releases"><strong>Download the latest release</strong></a>
     <br />
     <br />
-    <a href="https://github.com/itCarl/PapasPantheon/issues/new?labels=bug">Report Bug</a>
+    <a href="https://github.com/itCarl/CookieClickerMod-PapasPantheon/issues/new?labels=bug">Report Bug</a>
     &middot;
-    <a href="https://github.com/itCarl/PapasPantheon/issues/new?labels=enhancement">Request Feature</a>
+    <a href="https://github.com/itCarl/CookieClickerMod-PapasPantheon/issues/new?labels=enhancement">Request Feature</a>
   </p>
 
-  <a href="https://github.com/itCarl/PapasPantheon/releases"><img src="https://img.shields.io/github/v/release/itCarl/PapasPantheon" alt="Release"></a>
-  <a href="https://github.com/itCarl/PapasPantheon/actions/workflows/release.yml"><img src="https://github.com/itCarl/PapasPantheon/actions/workflows/release.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/itCarl/CookieClickerMod-PapasPantheon/releases"><img src="https://img.shields.io/github/v/release/itCarl/CookieClickerMod-PapasPantheon" alt="Release"></a>
+  <a href="https://github.com/itCarl/CookieClickerMod-PapasPantheon/actions/workflows/release.yml"><img src="https://github.com/itCarl/CookieClickerMod-PapasPantheon/actions/workflows/release.yml/badge.svg" alt="CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
 </div>
 
@@ -78,7 +78,7 @@ not two - counting differing sockets would say five hours when it costs one.
 ### Manual
 
 1. Download `PapasPantheon.zip` from the
-   [GitHub Releases](https://github.com/itCarl/PapasPantheon/releases) page.
+   [GitHub Releases](https://github.com/itCarl/CookieClickerMod-PapasPantheon/releases) page.
 2. Unzip it into `<Cookie Clicker>/resources/app/mods/local/PapasPantheon/`.
 3. Restart the game and enable the mod under **Options -> Mods**. The panel
    appears under the Temple.
