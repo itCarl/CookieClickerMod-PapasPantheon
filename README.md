@@ -41,6 +41,8 @@ minigame. Rearranging spirits is the most expensive routine action in the game:
 a worship swap returns after 1, 4 and 16 hours, so spending all three and
 getting back to full takes **twenty-one hours**.
 
+![Presets and slots, each priced in swaps](docs/screenshots/pp-panel.png)
+
 Every preset and slot therefore shows its true minimum swap cost before you
 touch it. The cost is found by a breadth-first search over arrangements that
 models the game's own rule: `M.slotGod` makes two spirits exchange places when
